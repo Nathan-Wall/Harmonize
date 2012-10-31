@@ -1,0 +1,3 @@
+[submodule "SymbolsForES5"]
+	path = SymbolsForES5
+	url = https://github.com/wnwall/SymbolsForES5.git
