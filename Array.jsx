@@ -166,4 +166,33 @@
 
 	});
 
+	shimProps(Array.prototype, {
+
+		contains: (function() {
+			var indexOf = Function.prototype.call.bind(Array.prototype.indexOf);
+			return function contains(value) {
+				// Note: It's uncertain whether this will go with egal, ===, or a mixture from recent ES6 discussions.
+				// For now, we have chosen to throw if 0 or NaN is used, since we don't know how ES6 will behave in these
+				// circumstances. That should make this implementation a subset of the future ES6 specification, which will
+				// prevent code using it from breaking once the ES6 specification version is complete and implemented.
+				// TODO: Keep up with the spec as it evolves and what algorithm it ends up using for comparison.
+
+				if (value !== value || value === 0)
+					throw new Error('Invalid value: ' + value);
+
+				var O = Object(this),
+					L = O.length >>> 0;
+
+				// We also expect the spec will allow contains to be called on non-objects, but we throw for now because
+				// it is the most forward compatible solution (just in case the spec ends up throwing for non-objects).
+				if (O !== this)
+					throw new Error('contains called on non-object.');
+
+				return !!~indexOf(O, value);
+
+			}
+		})()
+
+	});
+
 })();

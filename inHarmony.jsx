@@ -2,6 +2,10 @@
 
 	'use strict';
 
+	// TODO: BinaryData. We have decided not to implement BinaryData at this time because rev 11 of the draft states
+	// that this section will be changed significantly, and warns not to waste too much time on it. We will wait for
+	// a more final version.
+
 	// If this is not an ES5 environment, we can't do anything.
 	if (
 		/* We'll at least need the following functions.
@@ -36,6 +40,7 @@
 	function defineValueWC(obj, name, value) {
 		Object.defineProperty(obj, name, {
 			value: value,
+			enumerable: false,
 			writable: true,
 			configurable: true
 		});

@@ -1,3 +1,5 @@
+// TODO: Object.prototype.assign if possible.
+
 (function() {
 
 	shimProps(Object, {
@@ -39,5 +41,94 @@
 		}
 
 	});
+
+})();
+
+Object.prototype.toString = (function() {
+
+	var original = Object.prototype.toString,
+		nativeBrands = { };
+
+	[
+		"Arguments", "Array", "Boolean", "Date", "Error", "Function", "JSON", "Math", "Number", "Object", "RegExp",
+		"String"
+	].forEach(function(u) {
+		nativeBrands[u] = true;
+	});
+
+	return function toString() {
+
+		// 15.2.4.2 Object.prototype.toString ( )
+
+		// When the toString method is called, the following steps are taken:
+
+		// 1. If the this value is undefined, return "[object Undefined]".
+		if (this === undefined) return '[object Undefined]';
+
+		// 2. If the this value is null, return "[object Null]".
+		if (this === null) return '[object Null]';
+
+		// 3. Let O be the result of calling ToObject passing the this value as the argument.
+		var O = Object(this);
+
+		// 4. If O has a [[NativeBrand]] internal property, let tag be the corresponding value from
+		// 5. Table 27.
+		// [[[NativeBrand]] corresponds loosely to ES5 [[Class]]].
+		var NativeBrand = original.call(O).slice(8, -1);
+		if (nativeBrands[NativeBrand] && NativeBrand != 'Object')
+			return NativeBrand;
+
+		// 6. Else
+		else {
+
+			// a. Let hasTag be the result of calling the [[HasProperty]] internal method of O with argument
+			// @@toStringTag.
+			var hasTag = Symbol.__useIsIn__ ? $$toStringTag.isIn(O) : $$toStringTag in O;
+
+			// b. If hasTag is false, let tag be "Object".
+			// [We use NativeBrand here instead of Object to defer to the built-in toString, which may be an ES6-
+			// compliant toString. This allows us to extend toString to support $$toStringTag without possibly
+			// breaking an existing support for @@toStringTag. In ES5 accessing [[Class]] through toString and
+			// accessing @@toStringTag on an extended object are functionally equivalent, so this shouldn't produce
+			// any discernible differences in ES5 and ES6 environments.]
+			if (!hasTag) tag = NativeBrand;
+
+			// c. Else,
+			else {
+
+				var tag;
+
+				try {
+
+					// i. Let tag be the result of calling the [[Get]] internal method of O with argument @@toStringTag.
+					tag = O[$$toStringTag];
+
+				} catch(x) {
+
+					// ii. If tag is an abrupt completion, let tag be NormalCompletion("???").
+					tag = '???';
+
+				}
+
+				// iii. Let tag be tag.[[value]].
+
+				// iv. If Type(tag) is not String, let tag be "???".
+				if (typeof tag != 'string')
+					tag = '???';
+
+				// v. If tag is any of "Arguments", "Array", "Boolean", "Date", "Error", "Function", "JSON", "Math",
+				// "Number", "Object", "RegExp", or "String" then let tag be the string value "~" concatenated with the
+				// current value of tag.
+				if (nativeBrands[tag])
+					tag = '~' + tag;
+
+			}
+
+		}
+
+		// 7. Return the String value that is the result of concatenating the three Strings "[object ", tag, and "]".
+		return '[object ' + tag + ']';
+
+	};
 
 })();
