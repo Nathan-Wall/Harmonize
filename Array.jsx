@@ -191,8 +191,226 @@
 				return !!~indexOf(O, value);
 
 			}
-		})()
+		})(),
+
+		items: function items() {
+			// 15.4.4.23 Array.prototype.items ( )
+			// The following steps are taken:
+
+			// 1. Let O be the result of calling ToObject with the this value as its argument.
+			// 2. ReturnIfAbrupt(O).
+			var O = Object(this);
+
+			// 3. Return the result of calling the CreateArrayIterator abstract operation with arguments O and
+			// "key+value".
+			return CreateArrayIterator(O, 'key+value');
+
+		},
+
+		keys: function keys() {
+			// 15.4.4.24 Array.prototype.keys ( )
+			// The following steps are taken:
+
+			// 1. Let O be the result of calling ToObject with the this value as its argument.
+			// 2. ReturnIfAbrupt(O).
+			var O = Object(this);
+
+			// 3. Return the result of calling the CreateArrayIterator abstract operation with arguments O and "key".
+			return CreateArrayIterator(O, 'key');
+
+		},
+
+		values: function values() {
+			// 15.4.4.25 Array.prototype.values
+			// The following steps are taken:
+
+			// 1. Let O be the result of calling ToObject with the this value as its argument.
+			// 2. ReturnIfAbrupt(O).
+			var O = Object(this);
+
+			// 3. Return the result of calling the CreateArrayIterator abstract operation with arguments O and "value".
+			return CreateArrayIterator(O, 'value');
+
+		}
 
 	});
+
+	// 15.4.4.26 Array.prototype.@@iterator ( )
+	// The initial value of the @@iterator property is the same function object as the initial value of the
+	// Array.prototype.items property.
+	// TODO: Check later drafts; rev. 11 has a comment saying: "Or should it be values?" so it could change.
+	if (!Array.prototype.hasOwnProperty($$iterator))
+		Array.prototype[$$iterator] = Array.prototype.items;
+
+	function CreateArrayIterator(array, kind) {
+		// 15.4.6.1 CreateArrayIterator Abstract Operation
+		// Several methods of Array objects return iterator objects. The abstract operation CreateArrayIterator with
+		// arguments array and kind is used to create and such iterator objects. It performs the following steps:
+
+		// 1. Let O be the result of calling ToObject(array).
+		// 2. ReturnIfAbrupt(O).
+		var O = Object(array);
+
+		// 3. Let itr be the result of the abstract operation ObjectCreate with the intrinsic object
+		// %ArrayIteratorPrototype% as its argument.
+		var itr = Object.create(ArrayIteratorPrototype);
+
+		var S = Secrets(itr);
+
+		// 4. Add a [[IteratedObject]] internal property to itr with value O.
+		S.set('[[IteratedObject]]', O);
+
+		// 5. Add a [[ArrayIteratorNextIndex]] internal property to itr with value 0.
+		S.set('[[ArrayIteratorNextIndex]]', 0);
+
+		// 6. Add a [[ArrayIterationKind]] internal property of itr with value kind.
+		S.set('[[ArrayIterationKind]]', kind);
+
+		// 7. Return itr.
+		return itr;
+
+	}
+
+	var ArrayIteratorPrototype = {
+
+		next: function next() {
+			// 15.4.6.2.2 ArrayIterator.prototype.next( )
+
+			// 1. Let O be the this value.
+			var O = this;
+
+			// 2. If Type(O) is not Object, throw a TypeError exception.
+			if (Object(O) != O)
+				throw new TypeError('Object expected: ' + O);
+
+			var S = Secrets(O);
+
+			// 3. If O does not have all of the internal properties of a Array Iterator Instance (15.4.6.1.2), throw a
+			// TypeError exception.
+			if (!S
+				|| !S.has('[[IteratedObject]]')
+				|| !S.has('[[ArrayIteratorNextIndex]]'
+				|| !S.has('[[ArrayIterationKind]]')))
+				throw new TypeError('ArrayIterator expected.');
+
+			// 4. Let a be the value of the [[IteratedObject]] internal property of O.
+			var a = S.get('[[IteratedObject]]');
+
+			// 5. Let index be the value of the [[ArrayIteratorNextIndex]] internal property of O.
+			var index = S.get('[[ArrayIteratorNextIndex]]');
+
+			// 6. Let itemKind be the value of the [[ArrayIterationKind]] internal property of O.
+			var itemKind = S.get('[[ArrayIterationKind]]');
+
+			// 7. Let lenValue be the result of calling the [[Get]] internal method of a with the argument "length".
+			var lenValue = a.length;
+
+			// 8. Let len be ToUint32(lenValue).
+			// 9. ReturnIfAbrupt(len).
+			var len = lenValue >>> 0;
+
+			var found, elementKey;
+
+			// 10. If itemKind contains the substring "sparse", then
+			if (~itemKind.indexOf('sparse')) {
+
+				// a. Let found be false.
+				found = false;
+
+				// b. Repeat, while found is false and index < len
+				while (!found && index < len) {
+
+					// i. Let elementKey be ToString(index).
+					elementKey = String(index);
+
+					// ii. Let found be the result of calling the [[HasProperty]] internal method of a with argument
+					// elementKey.
+					found = elementKey in a;
+
+					// iii. If found is false, then
+					if (!found)
+
+						// 1. Increase index by 1.
+						index++;
+
+				}
+
+			}
+
+			// 11. If index ≥ len, then
+			if (index >= len) {
+
+				// a. Set the value of the [[ArrayIteratorNextIndex]] internal property of O to +Infinity.
+				S.set('[[ArrayIteratorNextIndex]]', Infinity);
+
+				// b. Return Completion {[[type]]: throw, [[value]]: %StopIteration%, [[target]]: empty}.
+				throw StopIteration;
+
+			}
+
+			// 12. Let elementKey be ToString(index).
+			elementKey = String(index);
+
+			// 13. Set the value of the [[ArrayIteratorNextIndex]] internal property of O to index+1.
+			S.set('[[ArrayIteratorNextIndex]]', index + 1);
+
+			var elementValue, result;
+
+			// 14. If itemKind contains the substring "value", then
+			if (~itemKind.indexOf('value'))
+
+				// a. Let elementValue be the result of calling the [[Get]] internal method of a with argument
+				// elementKey.
+				// b. ReturnIfAbrupt(elementValue).
+				elementValue = a[elementKey];
+
+			if (~itemKind.indexOf('key+value')) {
+			// 15. If itemKind contains the substring "key+value", then
+
+				// a. Let result be the result of the abstract operation ArrayCreate with argument 2.
+				// b. Assert: result is a new, well-formed Array object so the following operations will never fail.
+				result = new Array(2);
+
+				// c. Call the [[DefineOwnProperty]] internal method of result with arguments "0", Property Descriptor
+				// {[[Value]]:	elementKey, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and
+				// false.
+				result[0] = elementKey;
+
+				// d. Call the [[DefineOwnProperty]] internal method of result with arguments "1", Property Descriptor
+				// {[[Value]]: elementValue, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and
+				// false.
+				result[1] = elementValue;
+
+				// e. Return result.
+				return result;
+
+			}
+
+			// 16. Else If itemKind contains the substring "key" then, return elementKey.
+			else if(~itemKind.indexOf('key'))
+				return elementKey;
+
+			// 17. Else itemKind is "value",
+			else if(itemKind === 'value')
+
+				// a. Return elementValue.
+				return elementValue;
+
+		}
+
+	};
+
+	ArrayIteratorPrototype[$$iterator] = function $$iterator() {
+		// 15.4.6.2.3 ArrayIterator.prototype.@@iterator ( )
+		// The following steps are taken:
+
+		// 1. Return the this value.
+		return this;
+
+	};
+
+	// 15.4.6.2.4 ArrayIterator.prototype.@@toStringTag
+	// The initial value of the @@toStringTag property is the string value "Array Iterator".
+	ArrayIteratorPrototype[$$toStringTag] = 'Array Iterator';
 
 })();

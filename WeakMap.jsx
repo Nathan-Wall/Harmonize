@@ -45,6 +45,7 @@ var WeakMap = (function() {
 			// d. Let itr be the result of calling the Invoke abstraction operation with iterator, obj, and an empty
 			// List as arguments.
 			// e. ReturnIfAbrupt(itr).
+			// TODO: Should this be iterable instead of obj?
 			itr = obj[iterator]();
 
 			// f. Let adder be the result of calling the [[Get]] internal method of obj with argument "set".
@@ -80,6 +81,7 @@ var WeakMap = (function() {
 
 				// b. If IteratorComplete(next) is true, then return NormalCompletion(obj).
 				if (x === StopIteration) return obj;
+				else throw x;
 
 			}
 
@@ -170,13 +172,13 @@ var WeakMap = (function() {
 		if (this instanceof WeakMap
 			&& this != WeakMap.prototype
 			&& (S = Secrets(this))
-			&& S.has('WeakMap:#constructed')
+			&& !S.has('WeakMap:#constructed')
 		) {
 
 			WeakMapConstructor.call(this, iterable);
 			S.set('WeakMap:#constructed', true);
 
-		} else return WeakMapFunction(iterable);
+		} else return WeakMapFunction.call(this, iterable);
 
 	}
 
@@ -298,9 +300,11 @@ var WeakMap = (function() {
 			// 6. ReturnIfAbrupt(k).
 			var k = Object(key);
 
+			var p;
+
 			// [We deviate from the steps to keep the weak, O(1) intent of the WeakMap.]
 			if ((p = getRecord(S, k)) && p !== NO_SECRETS)
-				return p.value;
+				return p;
 
 			else if(p === NO_SECRETS) {
 				// [If the weak intent cannot be kept, we fall back to non-weak, O(n) steps.]
@@ -342,6 +346,8 @@ var WeakMap = (function() {
 			// 5. Let k be ToObject(key).
 			// 6. ReturnIfAbrupt(k).
 			var k = Object(key);
+
+			var p;
 
 			// [We deviate from the steps to keep the weak, O(1) intent of the WeakMap.]
 			if ((p = getRecord(S, k)) && p !== NO_SECRETS)
@@ -391,6 +397,8 @@ var WeakMap = (function() {
 			// He said this should be fixed in rev. 12.]
 			if (Object(key) !== key)
 				throw new TypeError('Key is not an object: ' + key);
+
+			var p;
 
 			// [We deviate from the steps to keep the weak, O(1) intent of the WeakMap.]
 			if ((p = setRecord(S, key, value)) && p === NO_SECRETS) {
@@ -472,8 +480,6 @@ var WeakMap = (function() {
 
 		var p = Sk.getOwn($weakMapRecordId);
 		if (p) {
-			delete p.key;
-			delete p.value;
 			Sk.delete($weakMapRecordId);
 			// Return true if the record was successfully deleted.
 			return true;

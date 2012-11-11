@@ -1,9 +1,8 @@
 var Map = (function() {
-	// TODO: improve efficiency by storing primitives in hashtables.
-	
-	var mNumber = 0,
+	// TODO: It would probably be good to clean up deleted keys when possible. This is not a trivial task, however,
+	// as cleanup can't break forEach and MapIterator, and it must update indices in object-keys and primitive-keys.
 
-		NO_SECRETS = { NO_SECRETS: true };
+	var mNumber = 0;
 
 	function MapInitialisation(obj, iterable) {
 		// 15.14.1.1 MapInitialisation
@@ -61,7 +60,11 @@ var Map = (function() {
 		// 6. Set obj’s [[MapData]] internal property to a new empty List.
 		S.set('[[MapData]]', [ ]);
 		S.set('#MapRecordId', 'Map:id:' + (mNumber++));
+		// [Store size for efficiency.]
 		S.set('Map:size', 0);
+		// [Store indices by key for efficiency.]
+		S.set('Map:primitive-keys', Object.create(null));
+		S.set('Map:object-keys', new WeakMap());
 
 		// 7. If iterable is undefined, return obj.
 		if (iterable === undefined) return obj;
@@ -81,6 +84,7 @@ var Map = (function() {
 
 				// b. If IteratorComplete(next) is true, then return NormalCompletion(obj).
 				if (x === StopIteration) return obj;
+				else throw x;
 
 			}
 
@@ -171,13 +175,13 @@ var Map = (function() {
 		if (this instanceof Map
 			&& this != Map.prototype
 			&& (S = Secrets(this))
-			&& S.has('Map:#constructed')
+			&& !S.has('Map:#constructed')
 			) {
 
 			MapConstructor.call(this, iterable);
 			S.set('Map:#constructed', true);
 
-		} else return MapFunction(iterable);
+		} else return MapFunction.call(this, iterable);
 
 	}
 
@@ -212,6 +216,8 @@ var Map = (function() {
 			S.set('[[MapData]]', [ ]);
 			S.set('Map:size', 0);
 			S.set('#MapRecordId', 'Map:id:' + (mNumber++));
+			S.set('Map:primitive-keys', Object.create(null));
+			S.get('Map:object-keys').clear();
 
 			// 5. Return undefined.
 
@@ -237,16 +243,12 @@ var Map = (function() {
 
 			var p;
 
-			// [We deviate from the steps for efficiency when possible.]
-			// [If there is no record to delete, we can exit this algorithm early.]
-			if (Object(key) === key && (p = deleteRecord(S, key)) && p === false)
-				return false;
-
-			// [If there was something to delete from an Object key, we still need to delete it from the entries List
-			// for the sake of forEach, etc.]
-
 			// 5. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
-			for (var i = 0; i < entries.length; i++) {
+			// for (var i = 0; i < entries.length; i++) {
+			// [We deviate from the steps for efficiency; we can find most indices in O(1) rather than O(n).]
+			var i = getRecordIndex(S, key);
+			if (i !== false) {
+
 				p = entries[i];
 
 				// a. If SameValue(p.[[key]], key), then
@@ -364,22 +366,19 @@ var Map = (function() {
 			// 4. Let entries be the List that is the value of M’s [[MapData]] internal property.
 			var entries = S.get('[[MapData]]');
 
-			// [We deviate from the steps for efficiency when possible.]
-			if (Object(key) === key && (p = getRecord(S, key)) && p !== NO_SECRETS)
-				return p.value;
+			var p;
 
-			else if(p === NO_SECRETS) {
-				// [If the weak intent cannot be kept, we fall back to non-weak, O(n) steps.]
+			// 5. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
+			// for (var i = 0; i < entries.length; i++) {
+			// [We deviate from the steps for efficiency; we can find most indices in O(1) rather than O(n).]
+			var i = getRecordIndex(S, key);
+			if (i !== false) {
 
-				// 5. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
-				for (var i = 0; i < entries.length; i++) {
-					p = entries[i];
+				p = entries[i];
 
-					// a. If SameValue(p.[[key]], key), then return p.[[value]]
-					if (Object.is(p.key, key))
-						return p.value;
-
-				}
+				// a. If SameValue(p.[[key]], key), then return p.[[value]]
+				if (Object.is(p.key, key))
+					return p.value;
 
 			}
 
@@ -405,22 +404,19 @@ var Map = (function() {
 			// 4. Let entries be the List that is the value of M’s [[MapData]] internal property.
 			var entries = S.get('[[MapData]]');
 
-			// [We deviate from the steps for efficiency when possible.]
-			if (Object(key) === key && (p = getRecord(S, k)) && p !== NO_SECRETS)
-				return true;
+			var p;
 
-			else if(p === NO_SECRETS) {
-				// [If the weak intent cannot be kept, we fall back to non-weak, O(n) steps.]
+			// 5. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
+			// for (var i = 0; i < entries.length; i++) {
+			// [We deviate from the steps for efficiency; we can find most indices in O(1) rather than O(n).]
+			var i = getRecordIndex(S, key);
+			if (i !== false) {
 
-				// 5. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
-				for (var i = 0; i < entries.length; i++) {
-					p = entries[i];
+				p = entries[i];
 
-					// a. If SameValue(p.[[key]], key), then return true.
-					if (Object.is(p.key, key))
-						return true;
-
-				}
+				// a. If SameValue(p.[[key]], key), then return true.
+				if (Object.is(p.key, key))
+					return true;
 
 			}
 
@@ -477,13 +473,14 @@ var Map = (function() {
 			// 4. Let entries be the List that is the value of M’s [[MapData]] internal property.
 			var entries = S.get('[[MapData]]');
 
-			// [We deviate from the steps for efficiency when possible.]
-			setRecord(S, key, value);
-
-			// [We still must continue the steps, for the sake of forEach.]
+			var p;
 
 			// 5. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
-			for (var i = 0; i < entries.length; i++) {
+			// for (var i = 0; i < entries.length; i++) {
+			// [We deviate from the steps for efficiency; we can find most indices in O(1) rather than O(n).]
+			var i = getRecordIndex(S, key);
+			if (i !== false) {
+
 				p = entries[i];
 
 				// a. If SameValue(p.[[key]], key), then
@@ -507,6 +504,13 @@ var Map = (function() {
 			// 7. Append p as the last element of entries.
 			entries.push(p);
 			S.set('Map:size', S.get('Map:size') + 1);
+
+			// [We store the index in a WeakMap or hash map for efficiency.]
+			var index = entries.length - 1;
+			if (Object(key) === key)
+				S.get('Map:object-keys').set(key, index);
+			else
+				S.get('Map:primitive-keys')[convertPrimitive(key)] = index;
 
 			// 8. Return undefined.
 
@@ -585,6 +589,7 @@ var Map = (function() {
 			throw new TypeError('Object is not a Map.');
 
 		// 4. Let entries be the List that is the value of M’s [[MapData]] internal property.
+		// TODO: entries is defined but never used.
 		var entries = S.get('[[MapData]]');
 
 		// 5. Let itr be the result of the abstract operation ObjectCreate with the intrinsic object
@@ -615,7 +620,7 @@ var Map = (function() {
 
 	var MapIteratorPrototype = { };
 
-	defineValuesWC(MapIteratorPrototpye, {
+	defineValuesWC(MapIteratorPrototype, {
 
 		next: function() {
 			// 15.14.7.2.2 MapIterator.prototype.next( )
@@ -631,7 +636,7 @@ var Map = (function() {
 
 			// 3. If O does not have all of the internal properties of a Map Iterator Instance (15.14.7.1.2), throw a
 			// TypeError exception.
-			if (!S.has('[[Map]]') || !S.has('[[MapNextIndex]]') || !S.has('[[MapIterationKind]]'))
+			if (!S || !S.has('[[Map]]') || !S.has('[[MapNextIndex]]') || !S.has('[[MapIterationKind]]'))
 				throw new TypeError('MapIterator expected.');
 
 			// 4. Let m be the value of the [[Map]] internal property of O.
@@ -646,7 +651,7 @@ var Map = (function() {
 			var Sm = Secrets(m);
 
 			// 7. Assert: m has a [[MapData]] internal property.
-			if (!Sm.has('[[MapData]]'))
+			if (!Sm || !Sm.has('[[MapData]]'))
 				throw new TypeError('Map expected.');
 
 			// 8. Let entries be the List that is the value of the [[MapData]] internal property of m.
@@ -659,7 +664,7 @@ var Map = (function() {
 			while (index < entries.length) {
 
 				// a. Let e be the Record {[[key]], [[value]]} at 0-origined insertion position index of entries.
-				e = entries[0];
+				e = entries[index];
 
 				// b. Set index to index+1;
 				index++;
@@ -721,7 +726,6 @@ var Map = (function() {
 
 	MapIteratorPrototype[$$iterator] = function $$iterator() {
 		// 	15.14.7.2.3MapIterator.prototype.@@iterator ( )
-
 		// The following steps are taken:
 
 		// 1. Return the this value.
@@ -733,55 +737,29 @@ var Map = (function() {
 	// The initial value of the @@toStringTag property is the string value "Map Iterator".
 	MapIteratorPrototype[$$toStringTag] = 'Map Iterator';
 
-	function getRecord(S, k) {
+	function getRecordIndex(S, k) {
 
-		var Sk = Secrets(k),
-			$MapRecordId;
+		var index;
 
-		if (Sk) $MapRecordId = S.get('#MapRecordId');
-		// Return NO_SECRETS if this object doesn't support Secrets
-		else return NO_SECRETS;
+		if (Object(k) === k)
+			index = S.get('Map:object-keys').get(k);
+		else
+			index = S.get('Map:primitive-keys')[convertPrimitive(k)];
 
-		return Sk.getOwn($MapRecordId);
-		// Returns undefined if the object supports Secrets but it had no Map Record.
-
-	}
-
-	function setRecord(S, k, value) {
-
-		var Sk = Secrets(k),
-			$MapRecordId;
-
-		if (Sk) $MapRecordId = S.get('#MapRecordId');
-		// Return NO_SECRETS if this object doesn't support Secrets
-		else return NO_SECRETS;
-
-		Sk.set($MapRecordId, value);
-		return true;
+		if (index === undefined) return false;
+		return index;
 
 	}
 
-	function deleteRecord(S, k) {
-
-		var Sk = Secrets(k),
-			$MapRecordId;
-
-		if (Sk) $MapRecordId = S.get('#MapRecordId');
-		// Return NO_SECRETS if this object doesn't support Secrets
-		else return NO_SECRETS;
-
-		var p = Sk.getOwn($MapRecordId);
-		if (p) {
-			delete p.key;
-			delete p.value;
-			Sk.delete($MapRecordId);
-			// Return true if the record was successfully deleted.
-			return true;
+	function convertPrimitive(k) {
+		switch(typeof k) {
+			case 'object': return 'null'; // should only be null
+			case 'undefined': return 'undefined';
+			case 'boolean': return String(k);
+			case 'number': return String(k);
+			case 'string': return '"' + k + '"';
+			default: throw new TypeError('Key type unexpected: ' + typeof k);
 		}
-
-		// Return false if the object supports Secrets but it had no Map Record.
-		return false;
-
 	}
 
 	return Map;

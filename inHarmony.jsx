@@ -23,18 +23,26 @@
 		|| !Object.isExtensible
 	) return;
 
+	var _SymbolsForES5_exports = { };
+
 	!!!includes('SymbolsForES5');
 
 	var _global = (0, eval)('this'),
 
+		Secrets = _SymbolsForES5_exports.Secrets,
+
 		shims = {
+			$$iterator: $$iterator,
+			$$toStringTag: $$toStringTag,
+			StopIteration: StopIteration,
 			WeakMap: WeakMap,
 			Map: Map,
 			Set: Set
 		};
 
 	Object.keys(shims).forEach(function(key) {
-		if(!_global[key]) _global[key] = shims[key];
+		if(typeof _inHarmony_forceShim == 'boolean' && _inHarmony_forceShim || !_global[key])
+			_global[key] = shims[key];
 	});
 
 	function defineValueWC(obj, name, value) {
@@ -48,7 +56,15 @@
 
 	function defineValuesWC(obj, map) {
 		Object.keys(map).forEach(function(key) {
-			defineValueWC(obj, key, map[key]);
+			var desc = Object.getOwnPropertyDescriptor(map, key),
+				value = desc.value;
+			if (value)
+				defineValueWC(obj, key, value);
+			else {
+				desc.enumerable = false;
+				desc.configurable = true;
+				Object.defineProperty(obj, key, desc);
+			}
 		});
 	}
 
