@@ -62,7 +62,7 @@
 			if (number == 0 || number == Infinity || number == -Infinity) return number;
 
 			// 5. Return the result of computing sign(number) * floor(abs(number)).
-			return (n < 0 ? -1 : 1) * Math.floor(Math.abs(number));
+			return (number < 0 ? -1 : 1) * Math.floor(Math.abs(number));
 
 		}
 
