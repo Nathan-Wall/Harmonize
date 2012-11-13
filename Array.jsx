@@ -253,7 +253,7 @@
 
 		// 3. Let itr be the result of the abstract operation ObjectCreate with the intrinsic object
 		// %ArrayIteratorPrototype% as its argument.
-		var itr = Object.create(ArrayIteratorPrototype);
+		var itr = create(ArrayIteratorPrototype);
 
 		var S = Secrets(itr);
 

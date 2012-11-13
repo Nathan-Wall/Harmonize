@@ -60,7 +60,7 @@ var WeakMap = (function() {
 
 		// 5. Add a [[WeakMapData]] internal property to obj.
 		// 6. Set obj’s [[WeakMapData]] internal property to a new empty List.
-		S.set('[[WeakMapData]]', [ ]);
+		S.set('[[WeakMapData]]', create(null));
 		S.set('#weakMapRecordId', 'WeakMap:id:' + (wmNumber++));
 
 		// 7. If iterable is undefined, return obj.
@@ -125,7 +125,7 @@ var WeakMap = (function() {
 
 			// a. Let map be the result of the abstract operation ObjectCreate (15.2) with the intrinsic
 			// %WeakWeakMapPrototype% as the argument.
-			map = Object.create(WeakMap.prototype);
+			map = create(WeakMap.prototype);
 
 		// 3. Else
 		else
@@ -210,7 +210,7 @@ var WeakMap = (function() {
 				throw new TypeError('Object is not a WeakMap.');
 
 			// 4. Set the value of M’s [[WeakMapData]] internal property to a new empty List.
-			S.set('[[WeakMapData]]', [ ]);
+			S.set('[[WeakMapData]]', create(null));
 			S.set('#weakMapRecordId', 'WeakMap:id:' + (wmNumber++));
 
 			// 5. Return undefined.
@@ -262,7 +262,7 @@ var WeakMap = (function() {
 						delete p.value;
 
 						// [This operation is not specified, but it can improve efficiency.]
-						entries.splice(i, 1);
+						splice(entries, i, 1);
 
 						// iii. Return true.
 						return true;
@@ -422,12 +422,12 @@ var WeakMap = (function() {
 				}
 
 				// 8. Let p be the Record {[[key]]: k, [[value]]: value}
-				p = Object.create(null);
+				p = create(null);
 				p.key = key;
 				p.value = value;
 
 				// 9. Append p as the last element of entries.
-				entries.push(p);
+				push(entries, p);
 
 			}
 

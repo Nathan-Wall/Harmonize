@@ -1,4 +1,4 @@
-(function() {
+(function(Object) {
 
 	'use strict';
 
@@ -23,7 +23,14 @@
 		|| !Object.isExtensible
 	) return;
 
-	var _SymbolsForES5_exports = { };
+	var _SymbolsForES5_exports = { },
+		undefined,
+
+		// We use these as functions rather than methods so that changes to Object and Array.prototype can't gain
+		// unwelcome access to the internal workings of our shims.
+		create = Object.create,
+		splice = Function.prototype.call.bind(Array.prototype.splice),
+		push = Function.prototype.call.bind(Array.prototype.push);
 
 	!!!includes('SymbolsForES5');
 
@@ -96,4 +103,4 @@
 
 	}
 
-})();
+})(Object);

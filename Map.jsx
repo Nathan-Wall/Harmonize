@@ -2,7 +2,11 @@ var Map = (function() {
 	// TODO: It would probably be good to clean up deleted keys when possible. This is not a trivial task, however,
 	// as cleanup can't break forEach and MapIterator, and it must update indices in object-keys and primitive-keys.
 
-	var mNumber = 0;
+	var mNumber = 0,
+
+		// We use these as functions rather than methods so that changes to Array.prototype can't gain unwelcomed access
+		// to the internal workings of our WeakMap.
+		push = Function.prototype.call.bind(Array.prototype.push);
 
 	function MapInitialisation(obj, iterable) {
 		// 15.14.1.1 MapInitialisation
@@ -58,12 +62,12 @@ var Map = (function() {
 
 		// 5. Add a [[MapData]] internal property to obj.
 		// 6. Set obj’s [[MapData]] internal property to a new empty List.
-		S.set('[[MapData]]', [ ]);
+		S.set('[[MapData]]', create(null));
 		S.set('#MapRecordId', 'Map:id:' + (mNumber++));
 		// [Store size for efficiency.]
 		S.set('Map:size', 0);
 		// [Store indices by key for efficiency.]
-		S.set('Map:primitive-keys', Object.create(null));
+		S.set('Map:primitive-keys', create(null));
 		S.set('Map:object-keys', new WeakMap());
 
 		// 7. If iterable is undefined, return obj.
@@ -128,7 +132,7 @@ var Map = (function() {
 
 			// a. Let map be the result of the abstract operation ObjectCreate (15.2) with the intrinsic
 			// %WeakMapPrototype% as the argument.
-			map = Object.create(Map.prototype);
+			map = create(Map.prototype);
 
 		// 3. Else
 		else
@@ -213,10 +217,10 @@ var Map = (function() {
 				throw new TypeError('Object is not a Map.');
 
 			// 4. Set the value of M’s [[MapData]] internal property to a new empty List.
-			S.set('[[MapData]]', [ ]);
+			S.set('[[MapData]]', create(null));
 			S.set('Map:size', 0);
 			S.set('#MapRecordId', 'Map:id:' + (mNumber++));
-			S.set('Map:primitive-keys', Object.create(null));
+			S.set('Map:primitive-keys', create(null));
 			S.get('Map:object-keys').clear();
 
 			// 5. Return undefined.
@@ -497,12 +501,12 @@ var Map = (function() {
 			}
 
 			// 6. Let p be the Record {[[key]]: key, [[value]]: value}
-			p = Object.create(null);
+			p = create(null);
 			p.key = key;
 			p.value = value;
 
 			// 7. Append p as the last element of entries.
-			entries.push(p);
+			push(entries, p);
 			S.set('Map:size', S.get('Map:size') + 1);
 
 			// [We store the index in a WeakMap or hash map for efficiency.]
@@ -594,7 +598,7 @@ var Map = (function() {
 
 		// 5. Let itr be the result of the abstract operation ObjectCreate with the intrinsic object
 		// %MapIteratorPrototype% as its argument.
-		var itr = Object.create(MapIteratorPrototype);
+		var itr = create(MapIteratorPrototype);
 
 		var Si = Secrets(itr);
 

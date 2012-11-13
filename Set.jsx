@@ -128,7 +128,7 @@ var Set = (function() {
 
 			// a. Let set be the result of the abstract operation ObjectCreate (15.2) with the intrinsic %SetPrototype%
 			// as the argument.
-			set = Object.create(Set.prototype);
+			set = create(Set.prototype);
 
 		// 3. Else
 		else
@@ -445,7 +445,7 @@ var Set = (function() {
 
 		// 5. Let itr be the result of the abstract operation ObjectCreate with the intrinsic object
 		// %SetIteratorPrototype% as its argument.
-		var itr = Object.create(SetIteratorPrototype);
+		var itr = create(SetIteratorPrototype);
 
 		var $i = Secrets(itr);
 
