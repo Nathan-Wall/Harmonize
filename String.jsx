@@ -1,5 +1,7 @@
 (function() {
 
+	var NumberToString = lazyBind(Number.prototype.toString);
+
 	function pad(s) {
 		while (s.length < 4) s = '0' + s;
 		return s;
@@ -36,7 +38,7 @@
 				nextCP = Number(next);
 
 				// d. If SameValue(nextCP, ToInteger(nextCP)) is false,then throw a RangeError exception.
-				if (nextCP != Number.toInteger(nextCP))
+				if (nextCP != NumberToInt(nextCP))
 					throw new RangeError('Integer expected: ' + nextCP);
 
 				// e. If nextCP < 0 or nextCP > 0x10FFFF, then throw a RangeError exception.
@@ -44,7 +46,7 @@
 					throw new RangeError('Index out of range: ' + nextCP);
 
 				// f. Append the elements of the UTF-16 Encoding (clause 6) of nextCP to the end of elements.
-				elements.push(eval('"\\u' + pad(String.toString(16)) + '"'));
+				push(elements, eval('"\\u' + pad(NumberToString(nextCP, 16)) + '"'));
 
 				// g. Let nextIndex be nextIndex + 1.
 				nextIndex++;
@@ -53,7 +55,7 @@
 
 			// 6. Return the string value whose elements are, in order, the elements in the List elements.
 			// If length is 0, the empty string is returned.
-			return elements.join('');
+			return join(elements, '');
 
 		},
 
@@ -61,7 +63,7 @@
 
 			// 1. Assert: substitutions is a well-formed rest parameter object.
 			// TODO: ?
-			var substitutions = Array.prototype.slice.call(arguments, 1);
+			var substitutions = slice(arguments, 1);
 
 			// 2. Let cooked be ToObject(callSite).
 			// 3. ReturnIfAbrupt(cooked).
@@ -106,13 +108,13 @@
 				nextSeg = String(next);
 
 				// e. Append in order the code unit elements of nextSeg to the end of stringElements.
-				stringElements.push(nextSeg);
+				push(stringElements, nextSeg);
 
 				// f. If nextIndex + 1 = literalSegments, then
 				if (nextIndex + 1 == literalSegments)
 					// i. Return the string value whose elements are, in order, the elements in the List stringElements.
 					// If length is 0, the empty string is returned.
-					return stringElements.join('');
+					return join(stringElements, '');
 
 				// g. Let next be the result of calling the [[Get]] internal method of substitutions with argument
 				// nextKey.
@@ -123,7 +125,7 @@
 				nextSub = String(next);
 
 				// j. Append in order the code unit elements of nextSub to the end of stringElements.
-				stringElements.push(nextSub);
+				push(stringElements, nextSub);
 
 				// k. Let nextIndex be nextIndex + 1.
 				nextIndex++;
@@ -154,7 +156,7 @@
 			// I believe this is incorrect because ECMA-262 Ed. 6 9-27-12. 9.1.4 says ToInteger
 			// can result in Infinity, while x | 0 cannot.
 			// 5. ReturnIfAbrupt(n).
-			var n = Number.toInt(count);
+			var n = NumberToInt(count);
 
 			// 6. If n ≤ 0, then throw a RangeError exception.
 			if (n <= 0) throw new RangeError('count must be greater than 0: ' + count);
@@ -191,13 +193,13 @@
 
 			// 6. Let pos be ToInteger(position). (If position is undefined, this step produces the value 0).
 			// 7. ReturnIfAbrupt(pos).
-			var pos = Number.toInt(position);
+			var pos = NumberToInt(position);
 
 			// 8. Let len be the number of elements in S.
 			var len = S.length;
 
 			// 9. Let start be min(max(pos, 0), len).
-			var start = Math.min(Math.max(pos, 0), len);
+			var start = min(max(pos, 0), len);
 
 			// 10. Let searchLength be the number of elements in searchString.
 			var searchLength = searchStr.length;
@@ -208,7 +210,7 @@
 
 			// 12. If the searchLength sequence of elements of S starting at start is the same as the full
 			// element sequence of searchString, return true.
-			if (S.substring(start, start + searchLength) == searchStr)
+			if (StringSlice(S, start, start + searchLength) == searchStr)
 				return true;
 
 			// 13. Otherwise, return false.
@@ -238,10 +240,10 @@
 
 			// 7. If endPosition is undefined, let pos be len, else let pos be ToInteger(endPosition).
 			// 8. ReturnIfAbrupt(pos).
-			var pos = endPosition === undefined ? len : Number.toInt(endPosition);
+			var pos = endPosition === undefined ? len : NumberToInt(endPosition);
 
 			// 9. Let end be min(max(pos, 0), len).
-			var end = Math.min(Math.max(pos, 0), len);
+			var end = min(max(pos, 0), len);
 
 			// 10. Let searchLength be the number of elements in searchString.
 			var searchLength = searchStr.length;
@@ -254,7 +256,7 @@
 
 			// 13. If the searchLength sequence of elements of S starting at start is the same as the full element
 			// sequence of searchString, return true.
-			if (S.substring(start, start + searchLength) == searchStr)
+			if (StringSlice(S, start, start + searchLength) == searchStr)
 				return true;
 
 			// 14. Otherwise, return false.
@@ -280,13 +282,13 @@
 
 			// 6. Let pos be ToInteger(position). (If position is undefined, this step produces the value 0).
 			// 7. ReturnIfAbrupt(pos).
-			var pos = Number.toInt(position);
+			var pos = NumberToInt(position);
 
 			// 8. Let len be the number of elements in S.
 			var len = S.length;
 
 			// 9. Let start be min(max(pos, 0), len).
-			var start = Math.min(Math.max(pos, 0), len);
+			var start = min(max(pos, 0), len);
 
 			// 10. Let searchLen be the number of characters in searchStr.
 			var searchLen = searchStr.length;
@@ -308,7 +310,7 @@
 			}
 			return false; */
 
-			return S.indexOf(searchStr, start) != -1;
+			return StringIndexOf(S, searchStr, start) != -1;
 
 		},
 
@@ -324,7 +326,7 @@
 
 			// 4. Let position be ToInteger(pos).
 			// 5. ReturnIfAbrupt(position).
-			var position = Number.toInt(pos);
+			var position = NumberToInt(pos);
 
 			// 6. Let size be the number of elements in S.
 			var size = S.length;
@@ -333,13 +335,13 @@
 			if (position < 0 || position >= size) return undefined;
 
 			// 8. Let first be the code unit value of the element at index position in the String S..
-			var first = S.charCodeAt(position);
+			var first = charCodeAt(S, position);
 
 			// 9. If first < 0xD800 or first > 0xDBFF or position+1 = size, then return first.
 			if (first < 0xd800 || first > 0xdbff || position + 1 == size) return first;
 
 			// 10. Let second be the code unit value of the element at position position+1 in the String S.
-			var second = S.charCodeAt(position + 1);
+			var second = charCodeAt(S, position + 1);
 
 			// 11. If second < 0xDC00 or first > 0xDFFF, then return first.
 			if (second < 0xdc00 || first > 0xdfff) return first;

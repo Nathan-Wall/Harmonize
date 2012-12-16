@@ -1,5 +1,8 @@
 (function() {
 
+	var log = Math.log,
+		pow = Math.pow;
+
 	shimProps(Math, {
 
 		log10: getLogFunction(10),
@@ -30,11 +33,11 @@
 			// If x is +Infinity, the result is +Infinity.
 			if (x == Infinity) return Infinity;
 
-			if (number <= 0 || number >= 1e-5) return Math.log(1 + number);
+			if (number <= 0 || number >= 1e-5) return log(1 + number);
 
 			for (var i = 1; i < precision; i++)
 				if ((i % 2) === 0)
-					value += (i % 2 == 0 ? -1 : 1) * Math.pow(number, i) / i;
+					value += (i % 2 == 0 ? -1 : 1) * pow(number, i) / i;
 
 			return value;
 
@@ -65,7 +68,7 @@
 			// If x is -Infinity, the result is -Infinity.
 			if (number == -Infinity) return -Infinity;
 
-			return Number.toInt(number);
+			return NumberToInt(number);
 
 		},
 
@@ -109,7 +112,7 @@
 			// If x is -Infinity, the result is -Infinity.
 			if (number == -Infinity) return -Infinity;
 
-			return Math.pow(number, 1 / 3);
+			return pow(number, 1 / 3);
 
 		}
 
@@ -124,7 +127,7 @@
 			var number = Number(x);
 
 			// If x is NaN, the result is NaN.
-			if (isNaN(number)) return NaN;
+			if (NumberIsNaN(number)) return NaN;
 
 			// If x is less than 0, the result is NaN.
 			if (number < 0) return NaN;
@@ -139,7 +142,7 @@
 			// If x is +Infinity, the result is +Infinity.
 			if (x == Infinity) return Infinity;
 
-			return Math.log(x) / Math.log(base);
+			return log(x) / log(base);
 
 		};
 	}

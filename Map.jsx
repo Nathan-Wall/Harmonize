@@ -4,9 +4,9 @@ var Map = (function() {
 
 	var mNumber = 0,
 
-		// We use these as functions rather than methods so that changes to Array.prototype can't gain unwelcomed access
-		// to the internal workings of our WeakMap.
-		push = Function.prototype.call.bind(Array.prototype.push);
+		WeakMapGet = lazyBind(WeakMap.prototype.get),
+		WeakMapSet = lazyBind(WeakMap.prototype.set),
+		WeakMapClear = lazyBind(WeakMap.prototype.clear);
 
 	function MapInitialisation(obj, iterable) {
 		// 15.14.1.1 MapInitialisation
@@ -29,7 +29,7 @@ var Map = (function() {
 			throw new TypeError('Object is a Map.');
 
 		// 3. If the [[Extensible]] internal property of obj is false, throw a TypeError exception.
-		if (!Object.isExtensible(obj))
+		if (!isExtensible(obj))
 			throw new TypeError('Object is not extensible.');
 
 		var iterator, itr, adder;
@@ -87,7 +87,7 @@ var Map = (function() {
 			} catch(x) {
 
 				// b. If IteratorComplete(next) is true, then return NormalCompletion(obj).
-				if (x === StopIteration) return obj;
+				if (getTagOf(x) == 'StopIteration') return obj;
 				else throw x;
 
 			}
@@ -107,7 +107,7 @@ var Map = (function() {
 			// i. Let status be the result of calling the [[Call]] internal method of adder with obj as thisArgument
 			// and a List whose elements are k and v as argumentsList.
 			// j. ReturnIfAbrupt(status).
-			adder.call(obj, k, v);
+			call(adder, obj, k, v);
 
 		}
 
@@ -182,10 +182,10 @@ var Map = (function() {
 			&& !S.has('Map:#constructed')
 			) {
 
-			MapConstructor.call(this, iterable);
+			call(MapConstructor, this, iterable);
 			S.set('Map:#constructed', true);
 
-		} else return MapFunction.call(this, iterable);
+		} else return call(MapFunction, this, iterable);
 
 	}
 
@@ -221,7 +221,7 @@ var Map = (function() {
 			S.set('Map:size', 0);
 			S.set('#MapRecordId', 'Map:id:' + (mNumber++));
 			S.set('Map:primitive-keys', create(null));
-			S.get('Map:object-keys').clear();
+			WeakMapClear(S.get('Map:object-keys'));
 
 			// 5. Return undefined.
 
@@ -256,7 +256,7 @@ var Map = (function() {
 				p = entries[i];
 
 				// a. If SameValue(p.[[key]], key), then
-				if (Object.is(p.key, key)) {
+				if (is(p.key, key)) {
 
 					// i.   Set p.[[key]] to empty.
 					delete p.key;
@@ -340,7 +340,7 @@ var Map = (function() {
 					// i. Let funcResult be the result of calling the [[Call]] internal method of callbackfn with T as
 					// thisArgument and a List containing e.[[value]], e.[[key]], and M as argumentsList.
 					// ii. ReturnIfAbrupt(funcResult).
-					funcResult = callbackfn.call(T, e.value, e.key, M);
+					funcResult = call(callbackfn, T, e.value, e.key, M);
 
 				}
 
@@ -381,7 +381,7 @@ var Map = (function() {
 				p = entries[i];
 
 				// a. If SameValue(p.[[key]], key), then return p.[[value]]
-				if (Object.is(p.key, key))
+				if (is(p.key, key))
 					return p.value;
 
 			}
@@ -419,7 +419,7 @@ var Map = (function() {
 				p = entries[i];
 
 				// a. If SameValue(p.[[key]], key), then return true.
-				if (Object.is(p.key, key))
+				if (is(p.key, key))
 					return true;
 
 			}
@@ -488,7 +488,7 @@ var Map = (function() {
 				p = entries[i];
 
 				// a. If SameValue(p.[[key]], key), then
-				if (Object.is(p.key, key)) {
+				if (is(p.key, key)) {
 
 					// i.  Set p.[[value]] to value.
 					p.value = value;
@@ -512,7 +512,7 @@ var Map = (function() {
 			// [We store the index in a WeakMap or hash map for efficiency.]
 			var index = entries.length - 1;
 			if (Object(key) === key)
-				S.get('Map:object-keys').set(key, index);
+				WeakMapSet(S.get('Map:object-keys'), key, index);
 			else
 				S.get('Map:primitive-keys')[convertPrimitive(key)] = index;
 
@@ -746,7 +746,7 @@ var Map = (function() {
 		var index;
 
 		if (Object(k) === k)
-			index = S.get('Map:object-keys').get(k);
+			index = WeakMapGet(S.get('Map:object-keys'), k);
 		else
 			index = S.get('Map:primitive-keys')[convertPrimitive(k)];
 

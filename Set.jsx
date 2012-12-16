@@ -1,5 +1,13 @@
 var Set = (function() {
 
+	var MapHas = lazyBind(Map.prototype.has),
+		MapSet = lazyBind(Map.prototype.set),
+		MapDelete = lazyBind(Map.prototype.delete),
+		MapForEach = lazyBind(Map.prototype.forEach),
+		MapSize = lazyBind(getOwnPropertyDescriptor(Map.prototype, 'size').get),
+		MapKeys = lazyBind(Map.prototype.keys),
+		MapIteratorNext = lazyBind(getPrototypeOf(new Map().values()).next);
+
 	// 15.16.1 Abstract Operations For Set Objects
 
 	function SetInitialisation(obj, iterable) {
@@ -92,7 +100,7 @@ var Set = (function() {
 				next = itr.next();
 			} catch(x) {
 				// b. If IteratorComplete(next) is true, then return NormalCompletion(obj).
-				if (x === StopIteration) return obj;
+				if (getTagOf(x) == 'StopIteration') return obj;
 				else throw x;
 			}
 
@@ -104,7 +112,7 @@ var Set = (function() {
 			// e. Let status be the result of calling the [[Call]] internal method of adder with obj as thisArgument and
 			// a List whose sole element is v as argumentsList.
 			// f. ReturnIfAbrupt(status).
-			adder.call(obj, next);
+			call(adder, obj, next);
 
 		}
 
@@ -189,10 +197,10 @@ var Set = (function() {
 			&& !S.has('Set:#constructed')
 			) {
 
-			SetConstructor.call(this, iterable);
+			call(SetConstructor, this, iterable);
 			S.set('Set:#constructed', true);
 
-		} else return SetFunction.call(this, iterable);
+		} else return call(SetFunction, this, iterable);
 
 	}
 
@@ -233,11 +241,11 @@ var Set = (function() {
 			// 5. Repeat for each p that is an element of entries,
 				// a. If p is not empty and SameValue(p, value) is true, then
 					// i. Return undefined.
-			if (entries.has(value))
+			if (MapHas(entries, value))
 				return;
 
 			// 6. Append p as the last element of entries.
-			entries.set(value, true);
+			MapSet(entries, value, true);
 
 			// 7. Return undefined.
 
@@ -287,7 +295,7 @@ var Set = (function() {
 					// ii. Return true.
 			// 6. Return false.
 
-			return $.get('[[SetData]]').delete(value);
+			return MapDelete($.get('[[SetData]]', value);
 
 		},
 
@@ -336,8 +344,8 @@ var Set = (function() {
 					// i. Let funcResult be the result of calling the [[Call]] internal method of callbackfn with T as
 					// thisArgument and a List containing e and S as argumentsList.
 					// ii.	ReturnIfAbrupt(funcResult).
-			entries.forEach(function(value, key) {
-				callbackfn.call(T, key, S);
+			MapForEach(entries, function(value, key) {
+				call(callbackfn, T, key, S);
 			});
 
 			// 8. Return undefined.
@@ -346,6 +354,7 @@ var Set = (function() {
 
 		},
 
+		// TODO: contains?
 		has: function has(value) {
 			// 15.16.5.6 Set.prototype.has ( value )
 			// The following steps are taken:
@@ -367,7 +376,7 @@ var Set = (function() {
 				// a. If e is not empty and SameValue(e, value), then return true.
 			// 6. Return false.
 
-			return entries.has(value);
+			return MapHas(entries, value);
 
 		},
 
@@ -394,7 +403,7 @@ var Set = (function() {
 				// a. If e is not empty then i.	Set count to count+1.
 			// 7. Return count.
 
-			return entries.size;
+			return MapSize(entries);
 
 		},
 
@@ -453,7 +462,7 @@ var Set = (function() {
 		// 7. Add a [[SetNextIndex]] internal property to itr with value 0.
 
 		// [We get the Map's keys() iterator instead of the steps above.]
-		$i.set('SetIterator:MapIterator:values', entries.keys());
+		$i.set('SetIterator:MapIterator:values', MapKeys(entries));
 
 		// 8. Return itr.
 		return itr;
@@ -496,7 +505,7 @@ var Set = (function() {
 					// i. If itemKind is "key" then, return e.
 			// 9. Return Completion {[[type]]: throw, [[value]]: %StopIteration%, [[target]]: empty}.
 
-			return values.next();
+			return MapIteratorNext(values);
 
 		}
 

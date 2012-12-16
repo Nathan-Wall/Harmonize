@@ -80,7 +80,7 @@ var WeakMap = (function() {
 			} catch(x) {
 
 				// b. If IteratorComplete(next) is true, then return NormalCompletion(obj).
-				if (x === StopIteration) return obj;
+				if (getTagOf(x) == 'StopIteration') return obj;
 				else throw x;
 
 			}
@@ -100,7 +100,7 @@ var WeakMap = (function() {
 			// i. Let status be the result of calling the [[Call]] internal method of adder with obj as thisArgument
 			// and a List whose elements are k and v as argumentsList.
 			// j. ReturnIfAbrupt(status).
-			adder.call(obj, k, v);
+			call(adder, obj, k, v);
 
 		}
 
@@ -175,17 +175,17 @@ var WeakMap = (function() {
 			&& !S.has('WeakMap:#constructed')
 		) {
 
-			WeakMapConstructor.call(this, iterable);
+			call(WeakMapConstructor, this, iterable);
 			S.set('WeakMap:#constructed', true);
 
-		} else return WeakMapFunction.call(this, iterable);
+		} else return call(WeakMapFunction, this, iterable);
 
 	}
 
 	// 15.15.4.1 WeakMap.prototype
 	// The initial value of WeakMap.prototype is the WeakMap prototype object (15.15.4).
 	// This property has the attributes { [[Writable]]: false, [[Enumerable]]: false, [[Configurable]]: false }.
-	Object.defineProperty(WeakMap, 'prototype', {
+	defineProperty(WeakMap, 'prototype', {
 		value: WeakMap.prototype,
 		enumerable: false,
 		writable: false,
@@ -253,7 +253,7 @@ var WeakMap = (function() {
 					p = entries[i];
 
 					// a. If SameValue(p.[[key]], k), then
-					if (Object.is(p.key, k)) {
+					if (is(p.key, k)) {
 
 						// i.   Set p.[[key]] to empty.
 						delete p.key;
@@ -314,7 +314,7 @@ var WeakMap = (function() {
 					p = entries[i];
 
 					// a. If SameValue(p.[[key]], k), then return p.[[value]]
-					if (Object.is(p.key, k))
+					if (is(p.key, k))
 						return p.value;
 
 				}
@@ -361,7 +361,7 @@ var WeakMap = (function() {
 					p = entries[i];
 
 					// a. If SameValue(p.[[key]], k), then return true.
-					if (Object.is(p.key, k))
+					if (is(p.key, k))
 						return true;
 
 				}
@@ -374,7 +374,7 @@ var WeakMap = (function() {
 		},
 
 		set: function set(key, value) {
-			// 15.14.5.6 Map.prototype.set ( key , value )
+			// 15.14.5.6 WeakMap.prototype.set ( key , value )
 
 			// The following steps are taken:
 
@@ -391,12 +391,9 @@ var WeakMap = (function() {
 			// 4. Let entries be the List that is the value of M’s [[WeakMapData]] internal property.
 			var entries = S.get('[[WeakMapData]]');
 
-			// 5. Let k be ToObject(key).
-			// 6. ReturnIfAbrupt(k).
-			// [I got confirmation from Allen Wirfs-Brock that these steps are a mistake. Instead it should throw.
-			// He said this should be fixed in rev. 12.]
+			// 5. If Type(key) is not Object, then throw a TypeError exception.
 			if (Object(key) !== key)
-				throw new TypeError('Key is not an object: ' + key);
+				throw new TypeError('WeakMap key must be an object: ' + key);
 
 			var p;
 
@@ -404,12 +401,12 @@ var WeakMap = (function() {
 			if ((p = setRecord(S, key, value)) && p === NO_SECRETS) {
 				// [If the weak intent cannot be kept, we fall back to non-weak, O(n) steps.]
 
-				// 7. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
+				// 6. Repeat for each Record {[[key]], [[value]]} p that is an element of entries,
 				for (var i = 0; i < entries.length; i++) {
 					p = entries[i];
 
 					// a. If SameValue(p.[[key]], key), then
-					if (Object.is(p.key, key)) {
+					if (is(p.key, key)) {
 
 						// i.  Set p.[[value]] to value.
 						p.value = value;
@@ -421,17 +418,17 @@ var WeakMap = (function() {
 
 				}
 
-				// 8. Let p be the Record {[[key]]: k, [[value]]: value}
+				// 7. Let p be the Record {[[key]]: k, [[value]]: value}
 				p = create(null);
 				p.key = key;
 				p.value = value;
 
-				// 9. Append p as the last element of entries.
+				// 8. Append p as the last element of entries.
 				push(entries, p);
 
 			}
 
-			// 10. Return undefined.
+			// 9. Return undefined.
 
 		}
 

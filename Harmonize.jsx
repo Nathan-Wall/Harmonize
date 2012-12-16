@@ -1,4 +1,4 @@
-(function(Object) {
+(function(Object, String, Number, Error, TypeError, RangeError, isNaN, Infinity, NaN) {
 
 	'use strict';
 
@@ -26,11 +26,41 @@
 	var _SymbolsForES5_exports = { },
 		undefined,
 
+		lazyBind = Function.prototype.bind.bind(Function.prototype.call),
+
 		// We use these as functions rather than methods so that changes to Object and Array.prototype can't gain
 		// unwelcome access to the internal workings of our shims.
+
+		keys = Object.keys,
 		create = Object.create,
-		splice = Function.prototype.call.bind(Array.prototype.splice),
-		push = Function.prototype.call.bind(Array.prototype.push);
+		freeze = Object.freeze,
+		seal = Object.seal,
+		isFrozen = Object.isFrozen,
+		isSealed = Object.isSealed,
+		getOwnPropertyNames = Object.getOwnPropertyNames,
+		getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
+		getPrototypeOf = Object.getPrototypeOf,
+		defineProperty = Object.defineProperty,
+		hasOwn = lazyBind(Object.prototype.hasOwnProperty),
+		toString = lazyBind(Object.prototype.toString),
+
+		call = lazyBind(Function.prototype.call),
+
+		indexOf = lazyBind(Array.prototype.indexOf),
+		forEach = lazyBind(Array.prototype.forEach),
+		splice = lazyBind(Array.prototype.splice),
+		sort = lazyBind(Array.prototype.sort),
+		push = lazyBind(Array.protoype.push),
+		concat = lazyBind(Array.prototype.concat),
+
+		charCodeAt = lazyBind(String.prototype.charCodeAt),
+		StringSlice = lazyBind(String.prototype.slice),
+		StringIndexOf = lazyBind(String.prototype.indexOf),
+
+		floor = Math.floor,
+		abs = Math.abs,
+		min = Math.min,
+		max = Math.max;
 
 	!!!includes('SymbolsForES5');
 
@@ -45,32 +75,34 @@
 			WeakMap: WeakMap,
 			Map: Map,
 			Set: Set
-		};
+		},
 
-	Object.keys(shims).forEach(function(key) {
+		is = Object.is;
+
+	forEach(keys(shims), function(key) {
 		if(typeof _inHarmony_forceShim == 'boolean' && _inHarmony_forceShim || !_global[key])
 			_global[key] = shims[key];
 	});
 
 	function defineValueWC(obj, name, value) {
-		Object.defineProperty(obj, name, {
+		defineProperty(obj, name, own({
 			value: value,
 			enumerable: false,
 			writable: true,
 			configurable: true
-		});
+		}));
 	}
 
 	function defineValuesWC(obj, map) {
-		Object.keys(map).forEach(function(key) {
-			var desc = Object.getOwnPropertyDescriptor(map, key),
+		forEach(keys(map), function(key) {
+			var desc = own(Object.getOwnPropertyDescriptor(map, key)),
 				value = desc.value;
 			if (value)
 				defineValueWC(obj, key, value);
 			else {
 				desc.enumerable = false;
 				desc.configurable = true;
-				Object.defineProperty(obj, key, desc);
+				defineProperty(obj, key, desc);
 			}
 		});
 	}
@@ -91,16 +123,46 @@
 
 		} else methods = arguments[1];
 
-		Object.keys(methods).forEach(function(name) {
+		forEach(keys(methods), function(name) {
 			if (!(name in obj))
-				Object.defineProperty(obj, name, {
+				defineProperty(obj, name, own({
 					value: methods[name],
 					enumerable: enumerable,
 					writable: writable,
 					configurable: configurable
-				});
+				}));
 		});
 
 	}
 
-})(Object);
+	function getTagOf(obj) {
+		return StringSlice(toString(obj), 8, -1);
+	}
+
+	function getPropertyDescriptor(obj, key) {
+
+		// TODO: symbols -- also for Object.getOwnPropertyDescriptor (if symbols should work with that)
+		// TODO: coerce obj?
+
+		if (!(key in obj))
+			return;
+
+		var desc = getOwnPropertyDescriptor(obj, key)
+			|| getPropertyDescriptor(getPrototypeOf(obj), key);
+
+	}
+
+	function own(obj) {
+
+		var O = create(null);
+
+		forEach(getOwnPropertyNames(obj), function(key) {
+			defineProperty(O, key,
+				getOwnPropertyDescriptor(obj, key));
+		});
+
+		return O;
+
+	}
+
+})(Object, String, Number, Error, TypeError, RangeError, isNaN, Infinity, NaN);

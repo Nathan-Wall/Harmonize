@@ -12,8 +12,8 @@
 			var names = [ ];
 
 			do {
-				names = names.concat(Object.getOwnPropertyNames(obj));
-			} while (obj = Object.getPrototypeOf(obj));
+				names = concat(names, getOwnPropertyNames(obj));
+			} while (obj = getPrototypeOf(obj));
 
 			return names;
 
@@ -27,8 +27,8 @@
 			var desc;
 
 			do {
-				desc = Object.getOwnPropertyDescriptor(obj, name);
-			} while (!desc && (obj = Object.getPrototypeOf(obj)));
+				desc = getOwnPropertyDescriptor(obj, name);
+			} while (!desc && (obj = getPrototypeOf(obj)));
 
 			return desc;
 
@@ -46,7 +46,7 @@
 
 Object.prototype.toString = (function() {
 
-	var original = Object.prototype.toString,
+	var original = lazyBind(Object.prototype.toString),
 		nativeBrands = { };
 
 	[
@@ -74,7 +74,7 @@ Object.prototype.toString = (function() {
 		// 4. If O has a [[NativeBrand]] internal property, let tag be the corresponding value from
 		// 5. Table 27.
 		// [[[NativeBrand]] corresponds loosely to ES5 [[Class]]].
-		var NativeBrand = original.call(O).slice(8, -1);
+		var NativeBrand = StringSlice(original(O), 8, -1);
 		if (nativeBrands[NativeBrand] && NativeBrand != 'Object')
 			return NativeBrand;
 
@@ -83,7 +83,7 @@ Object.prototype.toString = (function() {
 
 			// a. Let hasTag be the result of calling the [[HasProperty]] internal method of O with argument
 			// @@toStringTag.
-			var hasTag = Symbol.__useIsIn__ ? $$toStringTag.isIn(O) : $$toStringTag in O;
+			var hasTag = ReflectHas(O, $$toStringTag);
 
 			// b. If hasTag is false, let tag be "Object".
 			// [We use NativeBrand here instead of Object to defer to the built-in toString, which may be an ES6-
