@@ -2,9 +2,6 @@ var ReflectHas;
 
 var Reflect = (function() {
 
-	var hasSymbol = Symbol.__hasSymbol__,
-		deleteSymbol = Symbol.__deleteSymbol__;
-
 	return {
 
 		getPrototypeOf: Object.getPrototypeOf,
@@ -70,9 +67,7 @@ var Reflect = (function() {
 			var key = ToPropertyKey(propertyKey);
 
 			// 5. Return the result of calling the [[Delete]] internal method of obj with argument key.
-			if (getTagOf(key) == 'Symbol' && deleteSymbol)
-				deleteSymbol(obj, key);
-			else delete obj[key];
+			delete obj[key];
 
 		},
 
@@ -214,9 +209,7 @@ var Reflect = (function() {
 			var key = ToPropertyKey(propertyKey);
 
 			// 5. Return the result of HasProperty( obj, key).
-			if (getTagOf(key) == 'Symbol' && hasSymbol)
-				return hasSymbol(obj, key)
-			else return key in obj;
+			return key in obj;
 
 		},
 

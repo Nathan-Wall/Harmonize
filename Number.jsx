@@ -1,4 +1,4 @@
-var NumberIsNaN = function isNaN(number) {
+function NumberIsNaN(number) {
 
 	// 1. If Type(number) is not Number, return false.
 	if (typeof number != 'number') return false;
@@ -11,7 +11,7 @@ var NumberIsNaN = function isNaN(number) {
 
 };
 
-function NumberIsFinite = function isFinite(number) {
+function NumberIsFinite(number) {
 	// 15.7.3.12
 	// This is different from the global isFinite.
 
@@ -26,7 +26,7 @@ function NumberIsFinite = function isFinite(number) {
 
 };
 
-var NumberIsInteger = function isInteger(number) {
+function NumberIsInteger(number) {
 
 	// 1. If Type(number) is not Number, return false.
 	if (typeof number != 'number') return false;
@@ -42,7 +42,7 @@ var NumberIsInteger = function isInteger(number) {
 
 };
 
-var NumberToInt = function toInt(value) {
+function NumberToInt(value) {
 	// ECMA-262 Ed. 6, 9-27-12. 9.1.4
 
 	// 1. Let number be the result of calling ToNumber on the input argument.
@@ -63,7 +63,7 @@ var NumberToInt = function toInt(value) {
 shimProps(Number, {
 	isNaN: NumberIsNaN,
 	isFinite: NumberIsFinite,
-	isInteger: NumberIsIteger,
+	isInteger: NumberIsInteger,
 	toInt: NumberToInt
 });
 

@@ -1,5 +1,9 @@
 var StopIteration = (function() {
 
-	return new (function StopIteration() { })();
+	var StopIteration = new (function StopIteration() { })();
+
+	$$(StopIteration, 'toStringTag', 'StopIteration');
+
+	return StopIteration;
 
 })();

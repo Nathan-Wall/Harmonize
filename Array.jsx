@@ -73,7 +73,16 @@ var ArrayOf = function of(/* ...items */) {
 
 };
 
-var ArrayFrom = function from(arrayLike) {
+var ArrayFrom = function from(arrayLike/*, mapFn */) {
+	// Note: The mapFn argument is not in the spec yet, but it is expected.
+	// TODO: Followup later and make sure it makes it to the spec.
+	// TODO: ArrayFrom may also need to be generalized to create objects which
+	// extend Array, such as TypedArrays.
+
+	var mapFn = arguments[1];
+
+	if (mapFn !== undefined && typeof mapFn != 'function')
+		throw new TypeError('Function expected.');
 
 	// 1. Let items be ToObject(arrayLike).
 	// 2. ReturnIfAbrupt(items).
@@ -141,7 +150,10 @@ var ArrayFrom = function from(arrayLike) {
 			// with arguments Pk, Property Descriptor {[[Value]]: kValue.[[value]], [[Writable]]: true,
 			// [[Enumerable]]: true, [[Configurable]]: true}, and true.
 			// iv.	ReturnIfAbrupt(defineStatus).
-			A[Pk] = kValue;
+			if (mapFn === undefined)
+				A[Pk] = kValue;
+			else
+				A[Pk] = mapFn(kValue);
 
 		}
 
@@ -228,18 +240,19 @@ shimProps(Array, {
 });
 
 shimProps(Array.prototype, {
-	contains: ArrayContains,
-	items: ArrayItems,
-	keys: ArrayKeys,
-	values: ArrayValues
+	contains: ArrayProtoContains,
+	items: ArrayProtoItems,
+	keys: ArrayProtoKeys,
+	values: ArrayProtoValues
 });
 
 // 15.4.4.26 Array.prototype.@@iterator ( )
 // The initial value of the @@iterator property is the same function object as the initial value of the
 // Array.prototype.items property.
 // TODO: Check later drafts; rev. 11 has a comment saying: "Or should it be values?" so it could change.
-if (!Array.prototype.hasOwnProperty($$iterator))
-	Array.prototype[$$iterator] = Array.prototype.items;
+// TODO: When @@iterator is available in implementations find a way to set like: $$(Array.prototype, 'iterator', @@iterator).
+// TODO: Changing `items` to `values` seems to fix some stuff, but would it be right to do?
+$$(Array.prototype, 'iterator', Array.prototype.values);
 
 function CreateArrayIterator(array, kind) {
 	// 15.4.6.1 CreateArrayIterator Abstract Operation
@@ -399,15 +412,15 @@ var ArrayIteratorPrototype = {
 
 };
 
-ArrayIteratorPrototype[$$iterator] = function $$iterator() {
+$$(ArrayIteratorPrototype, 'iterator', function $$iterator() {
 	// 15.4.6.2.3 ArrayIterator.prototype.@@iterator ( )
 	// The following steps are taken:
 
 	// 1. Return the this value.
 	return this;
 
-};
+});
 
 // 15.4.6.2.4 ArrayIterator.prototype.@@toStringTag
 // The initial value of the @@toStringTag property is the string value "Array Iterator".
-ArrayIteratorPrototype[$$toStringTag] = 'Array Iterator';
+$$(ArrayIteratorPrototype, 'toStringTag', 'Array Iterator');

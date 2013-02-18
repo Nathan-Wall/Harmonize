@@ -156,6 +156,7 @@ function ToPropertyKey(argument) {
 	if (Object(argument) === argument)
 
 		// a. If argument is an exotic String object, then
+		// TODO: Huh? What's an "exotic String object"?
 		if (getTagOf(argument) == 'Symbol')
 
 			// i. Return argument.

@@ -76,14 +76,14 @@ Object.prototype.toString = (function() {
 		// [[[NativeBrand]] corresponds loosely to ES5 [[Class]]].
 		var NativeBrand = StringSlice(original(O), 8, -1);
 		if (nativeBrands[NativeBrand] && NativeBrand != 'Object')
-			return NativeBrand;
+			return '[object ' + NativeBrand + ']';
 
 		// 6. Else
 		else {
 
 			// a. Let hasTag be the result of calling the [[HasProperty]] internal method of O with argument
 			// @@toStringTag.
-			var hasTag = ReflectHas(O, $$toStringTag);
+			var hasTag = $$($$HAS, O, 'toStringTag');
 
 			// b. If hasTag is false, let tag be "Object".
 			// [We use NativeBrand here instead of Object to defer to the built-in toString, which may be an ES6-
@@ -101,7 +101,7 @@ Object.prototype.toString = (function() {
 				try {
 
 					// i. Let tag be the result of calling the [[Get]] internal method of O with argument @@toStringTag.
-					tag = O[$$toStringTag];
+					tag = $$(O, 'toStringTag');
 
 				} catch(x) {
 

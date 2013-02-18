@@ -42,13 +42,10 @@ var Map = (function() {
 			iterable = Object(iterable);
 
 			// c. Let iterator be the intrinsic symbol @@iterator.
-			// TODO: What to do about @@iterator/$$iterator?
-			iterator = $$iterator;
-
 			// d. Let itr be the result of calling the Invoke abstraction operation with iterator, obj, and an empty
 			// List as arguments.
 			// e. ReturnIfAbrupt(itr).
-			itr = obj[iterator]();
+			itr = call($$(obj, 'iterator'), obj);
 
 			// f. Let adder be the result of calling the [[Get]] internal method of obj with argument "set".
 			// g. ReturnIfAbrupt(adder).
@@ -564,11 +561,11 @@ var Map = (function() {
 
 	});
 
-	Map.prototype[$$iterator] = Map.prototype.items;
+	$$(Map.prototype, 'iterator', Map.prototype.items);
 
 	// 15.14.5.7 Map.prototype.@@toStringTag
 	// The initial value of the @@toStringTag property is the string value "Map".
-	Map.prototype[$$toStringTag] = 'Map';
+	$$(Map.prototype, 'toStringTag', 'Map');
 
 	// 15.14.7 Map Iterator Object Structure
 
@@ -728,18 +725,18 @@ var Map = (function() {
 	});
 
 
-	MapIteratorPrototype[$$iterator] = function $$iterator() {
+	$$(MapIteratorPrototype, 'iterator', function $$iterator() {
 		// 	15.14.7.2.3MapIterator.prototype.@@iterator ( )
 		// The following steps are taken:
 
 		// 1. Return the this value.
 		return this;
 
-	};
+	});
 
 	// 15.14.7.2.4MapIterator.prototype.@@toStringTag
 	// The initial value of the @@toStringTag property is the string value "Map Iterator".
-	MapIteratorPrototype[$$toStringTag] = 'Map Iterator';
+	$$(MapIteratorPrototype, 'toStringTag', 'Map Iterator');
 
 	function getRecordIndex(S, k) {
 

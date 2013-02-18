@@ -39,14 +39,11 @@ var WeakMap = (function() {
 			iterable = Object(iterable);
 
 			// c. Let iterator be the intrinsic symbol @@iterator.
-			// TODO: What to do about @@iterator/$$iterator?
-			iterator = $$iterator;
-
 			// d. Let itr be the result of calling the Invoke abstraction operation with iterator, obj, and an empty
 			// List as arguments.
 			// e. ReturnIfAbrupt(itr).
 			// TODO: Should this be iterable instead of obj?
-			itr = obj[iterator]();
+			itr = call($$(obj, 'iterator'), obj);
 
 			// f. Let adder be the result of calling the [[Get]] internal method of obj with argument "set".
 			// g. ReturnIfAbrupt(adder).
@@ -436,7 +433,7 @@ var WeakMap = (function() {
 
 	// 15.15.5.7 Map.prototype.@@toStringTag
 	// The initial value of the @@toStringTag property is the string value "WeakMap".
-	WeakMap.prototype[$$toStringTag] = 'WeakMap';
+	$$(WeakMap.prototype, 'toStringTag', 'WeakMap');
 
 	function getRecord(S, k) {
 

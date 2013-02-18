@@ -60,12 +60,10 @@ var Set = (function() {
 			else {
 
 				// i. Let iterator be the @@iterator symbol.
-				iterator = $$iterator;
-
 				// ii. Let itr be the result of calling the Invoke abstraction operation with iterator, obj, and an
 				// empty List as arguments.
 				// TODO: I think the draft is wrong. It should say "iterable" instead of "obj". Confirm this.
-				itr = iterable[iterator]();
+				itr = call($$(iterable, 'iterator'), iterable);
 
 			}
 
@@ -295,7 +293,7 @@ var Set = (function() {
 					// ii. Return true.
 			// 6. Return false.
 
-			return MapDelete($.get('[[SetData]]', value);
+			return MapDelete($.get('[[SetData]]'), value);
 
 		},
 
@@ -425,11 +423,11 @@ var Set = (function() {
 	// 15.16.5.9 Map.prototype.@@iterator ( )
 	// The initial value of the @@iterator property is the same function object as the initial value of the values
 	// property.
-	Set.prototype[$$iterator] = Set.prototype.values;
+	$$(Set.prototype, 'iterator', Set.prototype.values);
 
 	// 15.16.5.10 Set.prototype.@@toStringTag
 	// The initial value of the @@toStringTag property is the string value "Set".
-	Set.prototype[$$toStringTag] = 'Set';
+	$$(Set.prototype, 'toStringTag', 'Set');
 
 	function CreateSetIterator(set) {
 		// 15.16.7.1 CreateSetIterator Abstract Operation
@@ -511,18 +509,18 @@ var Set = (function() {
 
 	});
 
-	SetIteratorPrototype[$$iterator] = function $$iterator() {
+	$$(SetIteratorPrototype, 'iterator', function $$iterator() {
 		// 15.16.7.2.3 SetIterator.prototype.@@iterator ( )
 		// The following steps are taken:
 
 		// 1.	Return the this value.
 		return this;
 
-	};
+	});
 
 	// 15.16.7.2.4 SetIterator.prototype.@@toStringTag
 	// The initial value of the @@toStringTag property is the string value "Set Iterator".
-	SetIteratorPrototype[$$toStringTag] = 'Set Iterator';
+	$$(SetIteratorPrototype, 'toStringTag', 'Set Iterator');
 
 	return Set;
 

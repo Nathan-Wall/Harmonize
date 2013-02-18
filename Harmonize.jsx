@@ -2,6 +2,12 @@
 
 	'use strict';
 
+	// TODO: Get a better detection & shimming system so that this isn't required.
+	// Note: There's currently no way to forceShim on Node without modifying this file.
+	var forceShim = typeof __Harmonize__ == 'object'
+		&& __Harmonize__ != null
+		&& __Harmonize__.forceShim;
+
 	// TODO: BinaryData. We have decided not to implement BinaryData at this time because rev 11 of the draft states
 	// that this section will be changed significantly, and warns not to waste too much time on it. We will wait for
 	// a more final version.
@@ -20,11 +26,14 @@
 		|| !Object.create
 		|| !Object.freeze
 		|| !Object.isFrozen
-		|| !Object.isExtensible
-	) return;
+		|| !Object.isExtensible)
+		return;
 
-	var _SymbolsForES5_exports = { },
-		undefined,
+	!!!standAlone(!!!include('../Secrets/Secrets.js'));
+
+	var undefined,
+
+		_global = (0, eval)('this'),
 
 		lazyBind = Function.prototype.bind.bind(Function.prototype.call),
 
@@ -37,6 +46,7 @@
 		seal = Object.seal,
 		isFrozen = Object.isFrozen,
 		isSealed = Object.isSealed,
+		isExtensible = Object.isExtensible,
 		getOwnPropertyNames = Object.getOwnPropertyNames,
 		getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor,
 		getPrototypeOf = Object.getPrototypeOf,
@@ -45,12 +55,13 @@
 		toString = lazyBind(Object.prototype.toString),
 
 		call = lazyBind(Function.prototype.call),
+		bind = lazyBind(Function.prototype.bind),
 
 		indexOf = lazyBind(Array.prototype.indexOf),
 		forEach = lazyBind(Array.prototype.forEach),
 		splice = lazyBind(Array.prototype.splice),
 		sort = lazyBind(Array.prototype.sort),
-		push = lazyBind(Array.protoype.push),
+		push = lazyBind(Array.prototype.push),
 		concat = lazyBind(Array.prototype.concat),
 
 		charCodeAt = lazyBind(String.prototype.charCodeAt),
@@ -60,29 +71,89 @@
 		floor = Math.floor,
 		abs = Math.abs,
 		min = Math.min,
-		max = Math.max;
+		max = Math.max,
 
-	!!!includes('SymbolsForES5');
+		Secrets = (function() {
+			var $ = createSecret(),
+				SecretsMethods = {
+					get: function get(name) {
+						return this.store[name];
+					},
+					// Note: This is really `hasOwn` because ECMAScript does not allow prototypal
+					// inheritence of internal properties. :(
+					has: function hasOwn_(name) {
+						return hasOwn(this.store, name);
+					},
+					set: function set(name, value) {
+						return this.store[name] = value;
+					},
+					delete: function delete_(name) {
+						return delete this.store[name];
+					}
+				};
+			return function Secrets(obj) {
+				if (obj == null)
+					throw new TypeError('Cannot call Secrets on null or undefined.');
+				var O = Object(obj),
+					secrets = $(O);
+				if (secrets && !hasOwn(secrets, 'store')) {
+					secrets.store = create(null);
+					forEach(keys(SecretsMethods), function(key) {
+						secrets[key] = SecretsMethods[key];
+					});
+				}
+				return secrets;
+			}
+		})(),
 
-	var _global = (0, eval)('this'),
+		// Symbol operators:
+		$$HAS = function($obj, symbolName) {
+			return symbolName in $obj;
+		},
+		$$DELETE = function($obj) {
+			return delete $obj[symbolName];
+		},
 
-		Secrets = _SymbolsForES5_exports.Secrets,
+		$$ = (function() {
+			var _$$ = createSecret();
+			return function(/* symbolOperator, */obj, symbolName/*, value */) {
+				// This function should be possible to write in a way that would be
+				// compatible with ES6 symbols.
+				// TODO: When ES6 symbols are implemented, rewrite this to work with @@iterator, etc.
+				if (arguments[0] === $$HAS
+					|| arguments[0] === $$DELETE) {
+					return arguments[0](_$$(arguments[1]), arguments[2]);
+				}
+				if (arguments.length > 2)
+					return _$$(obj)[symbolName] = arguments[2];
+				else
+					return _$$(obj)[symbolName];
+			};
+		})();
 
-		shims = {
-			$$iterator: $$iterator,
-			$$toStringTag: $$toStringTag,
+	!!!includes('WeakMap.jsx');
+
+	var shims = {
 			StopIteration: StopIteration,
 			WeakMap: WeakMap,
 			Map: Map,
-			Set: Set
+			Set: Set,
+			Reflect: Reflect
 		},
 
 		is = Object.is;
 
+	// Shim to global.
 	forEach(keys(shims), function(key) {
-		if(typeof _inHarmony_forceShim == 'boolean' && _inHarmony_forceShim || !_global[key])
+		if (!(key in _global) || forceShim)
 			_global[key] = shims[key];
 	});
+
+	// Export createSecret.
+	if (typeof exports == 'object' && exports != null) {
+		exports.createSecret = createSecret;
+		exports.$$ = $$;
+	}
 
 	function defineValueWC(obj, name, value) {
 		defineProperty(obj, name, own({
