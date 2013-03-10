@@ -56,7 +56,12 @@ var ArrayOf = function of(/* ...items */) {
 		// arguments Pk, Property Descriptor {[[Value]]: kValue.[[value]], [[Writable]]: true, [[Enumerable]]: true,
 		// [[Configurable]]: true}, and true.
 		// d. ReturnIfAbrupt(defineStatus).
-		A[Pk] = kValue;
+		defineProperty(A, Pk, {
+			value: kValue,
+			writable: true,
+			enumerable: true,
+			configurable: true
+		});
 
 		// e. Increase k by 1.
 		k++;
@@ -150,10 +155,12 @@ var ArrayFrom = function from(arrayLike/*, mapFn */) {
 			// with arguments Pk, Property Descriptor {[[Value]]: kValue.[[value]], [[Writable]]: true,
 			// [[Enumerable]]: true, [[Configurable]]: true}, and true.
 			// iv.	ReturnIfAbrupt(defineStatus).
-			if (mapFn === undefined)
-				A[Pk] = kValue;
-			else
-				A[Pk] = mapFn(kValue);
+			defineProperty(A, Pk, {
+				value: mapFn === undefined ? kValue : mapFn(kValue),
+				writable: true,
+				enumerable: true,
+				configurable: true
+			});
 
 		}
 

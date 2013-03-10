@@ -83,7 +83,9 @@ Object.prototype.toString = (function() {
 
 			// a. Let hasTag be the result of calling the [[HasProperty]] internal method of O with argument
 			// @@toStringTag.
-			var hasTag = $$($$HAS, O, 'toStringTag');
+			var hasTag;
+			try { hasTag = $$($$HAS, O, 'toStringTag'); }
+			catch(x) { }
 
 			// b. If hasTag is false, let tag be "Object".
 			// [We use NativeBrand here instead of Object to defer to the built-in toString, which may be an ES6-
@@ -101,6 +103,8 @@ Object.prototype.toString = (function() {
 				try {
 
 					// i. Let tag be the result of calling the [[Get]] internal method of O with argument @@toStringTag.
+					// Note: This $$(...) shouldn't need a try/catch since it should have already thrown above
+					// and not taken this `else` route if the object can't hold secrets.
 					tag = $$(O, 'toStringTag');
 
 				} catch(x) {
